@@ -1,0 +1,36 @@
+{
+  "name": "MadSpeed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "engines": {
+    "node": "0.12.x"
+  },
+  "browserify": {
+    "transform": [
+      [
+        "reactify",
+        {
+          "es6": true
+        }
+      ]
+    ]
+  },
+  "scripts": {
+    "start": "./dev_server.sh"
+  },
+  "author": "",
+  "dependencies": {
+    "baconjs": "0.7.42",
+    "browserify": "8.1.1",
+    "express": "4.11.1",
+    "immutable": "3.6.2",
+    "react": "0.13.0-beta.2",
+    "react-canvas": "0.0.1",
+    "reactify": "1.0.0"
+  },
+  "devDependencies": {
+    "supervisor": "0.6.0",
+    "watchify": "2.2.1"
+  }
+}
