@@ -1,30 +1,6 @@
 var React = require('react')
-var Bacon = require('baconjs')
 var Game = require('./Game')
-var Immutable = require('immutable')
-
-var el = document.getElementsByTagName("html")[0]
-var keyDownStream = Bacon.fromBinder(function(sink) {
-  el.onkeydown = function(evt) {
-    evt = evt || window.event;
-    sink(evt.keyCode)
-  }
-})
-var keyUpStream = Bacon.fromBinder(function(sink) {
-  el.onkeyup = function(evt) {
-    evt = evt || window.event;
-    sink(evt.keyCode)
-  }
-})
-
-var activeKeysStream = Bacon.update(Immutable.Set(),
-  [keyDownStream], (activeKeys, keyCode) => activeKeys.concat(keyCode),
-  [keyUpStream], (activeKeys, keyCode) => activeKeys.filterNot((activeKey) => activeKey === keyCode)
-).map((list) => list.toJS()).sampledBy(Bacon.interval(25))
-
-var globalStateStream = Bacon.combineTemplate({
-  activeKeys: activeKeysStream
-})
+var {gameStateStream} = require('./gameStateStore')
 
 var App = React.createClass({
   componentWillMount: function() {
@@ -36,4 +12,4 @@ var App = React.createClass({
   }
 })
 
-React.render(<App stateStream={globalStateStream}/>, document.getElementById('app'))
+React.render(<App stateStream={gameStateStream}/>, document.getElementById('app'))
