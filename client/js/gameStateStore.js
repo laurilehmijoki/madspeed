@@ -35,9 +35,7 @@ var vectorsStream = Bacon.update(Immutable.Map({xVector: 0, yVector: 0}),
       .map(activeKey => keyCodeToAxisDelta[activeKey])
       .filter(x => x != undefined)
       .reduce(
-        function(memo, {axis, delta}) {
-          return memo.set(`${axis}Vector`, coordDelta(memo.get(`${axis}Vector`) + delta))
-        },
+        (memo, {axis, delta}) => memo.set(`${axis}Vector`, coordDelta(memo.get(`${axis}Vector`) + delta)),
         prevVectors
       )
 )
