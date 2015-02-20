@@ -35,12 +35,12 @@ var vectorsStream = Bacon.update(Immutable.Map({xVector: 0, yVector: 0}),
       .map(activeKey => keyCodeToAxisDelta[activeKey])
       .filter(x => x != undefined)
       .reduce(
-        (memo, {axis, delta}) => memo.set(`${axis}Vector`, coordDelta(memo.get(`${axis}Vector`) + delta)),
+        (memo, {axis, delta}) => memo.set(`${axis}Vector`, limitVectorMagnitude(memo.get(`${axis}Vector`) + delta)),
         prevVectors
       )
 )
 
-var coordDelta = vector => vector < 0 ? Math.max(vector, -5) : Math.min(vector, 5)
+var limitVectorMagnitude = vector => vector < 0 ? Math.max(vector, -5) : Math.min(vector, 5)
 
 var coordinatesStream = Bacon.update(Immutable.Map({xCoord: 0, yCoord: 0}),
   [vectorsStream.toEventStream()], (prevCoords, vectors) =>
