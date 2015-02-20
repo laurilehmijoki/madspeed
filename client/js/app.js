@@ -1,6 +1,6 @@
 var React = require('react')
 var Game = require('./Game')
-var {gameStateStream} = require('./gameStateStore')
+var {gameStateStream} = require('./gameState')
 
 var App = React.createClass({
   componentWillMount: function() {
