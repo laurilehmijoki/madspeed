@@ -15,7 +15,7 @@ var keyUpStream = Bacon.fromBinder(function(sink) {
   }
 })
 
-var tick = Bacon.interval(15)
+var tick = Bacon.interval(50)
 
 var activeKeys = Bacon.update(Immutable.Set(),
   [keyDownStream], (prev, keyDownCode) => prev.concat(keyDownCode),
@@ -29,25 +29,47 @@ var keyCodeToAxisDelta = {
   40: {axis: 'y', delta: 1}
 }
 
+var areaBounds = {
+  x: {
+    min: 0,
+    max: window.innerWidth - 40
+  },
+  y: {
+    min: 0,
+    max: window.innerHeight - 20
+  }
+}
+
 var coordinatesStream = Bacon.update(Immutable.Map({xVector: 0, yVector: 0, xCoord: 0, yCoord: 0}),
   [activeKeys.toEventStream()], function(ballProperties, activeKeys) {
     var limitVectorMagnitude = vector => vector < 0 ? Math.max(vector, -5) : Math.min(vector, 5)
-    var vectorDeltasAdded = activeKeys
+    var vectorDeltasFromKeyboardAdded = activeKeys
       .map(activeKey => keyCodeToAxisDelta[activeKey])
       .filter(x => x != undefined)
       .reduce(
         (memo, {axis, delta}) => memo.update(`${axis}Vector`, (vect) => limitVectorMagnitude(vect + delta)),
         ballProperties
       )
-    var coordinateDeltasAdded = vectorDeltasAdded.flatMap((value, key, ballProperties) =>
-      ['x', 'y'].reduce(
-        (memo, axis) => memo.update(`${axis}Coord`, (coord) => coord + ballProperties.get(`${axis}Vector`)),
-        ballProperties
-      )
+    var vectorDeltasApplied = vectorDeltasFromKeyboardAdded.update('yVector', yVect => yVect + 0.3)
+    var coordinateDeltasAdded = ['x', 'y'].reduce(
+      (ballProperties, axis) => ballProperties.update(`${axis}Coord`, (coord) => coord + ballProperties.get(`${axis}Vector`)),
+      vectorDeltasApplied
     )
-    return coordinateDeltasAdded
+    var hasReachedAreaBound = function(axis, ballProperties) {
+      var coord = ballProperties.get(`${axis}Coord`)
+      return coord <= 0 ? true : coord > areaBounds[axis].max
+    }
+
+    var bounchesApplied = ['x', 'y'].reduce(
+      (ballProperties, axis) => ballProperties.update(
+        `${axis}Vector`,
+        vect => hasReachedAreaBound(axis, ballProperties) ? (vect * -0.9) : vect
+      ),
+      coordinateDeltasAdded
+    )
+    return bounchesApplied
   }
-)
+).doAction(x => console.log(x.toJS()))
 
 var gameStateStream = Bacon.combineTemplate({
   coordinates: coordinatesStream.map((c) => c.toJS())
