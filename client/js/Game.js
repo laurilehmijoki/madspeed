@@ -10,7 +10,7 @@ var Game = React.createClass({
     var surfaceWidth = window.innerWidth
     var surfaceHeight = window.innerHeight
     var {xCoord, yCoord} = this.props.world.coordinates
-    console.log(this.props.world.coordinates)
+    //console.log(this.props.world.coordinates)
     var imageStyle = {
       top: yCoord,
       left: xCoord,

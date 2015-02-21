@@ -29,25 +29,24 @@ var keyCodeToAxisDelta = {
   40: {axis: 'y', delta: 1}
 }
 
-var vectorsStream = Bacon.update(Immutable.Map({xVector: 0, yVector: 0}),
-  [activeKeys.toEventStream()], (prevVectors, activeKeys) =>
-    activeKeys
+var coordinatesStream = Bacon.update(Immutable.Map({xVector: 0, yVector: 0, xCoord: 0, yCoord: 0}),
+  [activeKeys.toEventStream()], function(ballProperties, activeKeys) {
+    var limitVectorMagnitude = vector => vector < 0 ? Math.max(vector, -5) : Math.min(vector, 5)
+    var vectorDeltasAdded = activeKeys
       .map(activeKey => keyCodeToAxisDelta[activeKey])
       .filter(x => x != undefined)
       .reduce(
-        (memo, {axis, delta}) => memo.set(`${axis}Vector`, limitVectorMagnitude(memo.get(`${axis}Vector`) + delta)),
-        prevVectors
+        (memo, {axis, delta}) => memo.update(`${axis}Vector`, (vect) => limitVectorMagnitude(vect + delta)),
+        ballProperties
       )
-)
-
-var limitVectorMagnitude = vector => vector < 0 ? Math.max(vector, -5) : Math.min(vector, 5)
-
-var coordinatesStream = Bacon.update(Immutable.Map({xCoord: 0, yCoord: 0}),
-  [vectorsStream.toEventStream()], (prevCoords, vectors) =>
-    ['x', 'y'].reduce(
-      (memo, axis) => memo.set(`${axis}Coord`, prevCoords.get(`${axis}Coord`) + vectors.get(`${axis}Vector`)),
-      prevCoords
+    var coordinateDeltasAdded = vectorDeltasAdded.flatMap((value, key, ballProperties) =>
+      ['x', 'y'].reduce(
+        (memo, axis) => memo.update(`${axis}Coord`, (coord) => coord + ballProperties.get(`${axis}Vector`)),
+        ballProperties
+      )
     )
+    return coordinateDeltasAdded
+  }
 )
 
 var gameStateStream = Bacon.combineTemplate({
