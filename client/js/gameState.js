@@ -40,34 +40,48 @@ var areaBounds = {
   }
 }
 
+var limitVectorMagnitude = vector => vector < 0 ? Math.max(vector, -5) : Math.min(vector, 5)
+var applyKeyPresses = activeKeys => ballProperties => activeKeys
+  .map(activeKey => keyCodeToAxisDelta[activeKey])
+  .filter(x => x != undefined)
+  .reduce(
+    (memo, {axis, delta}) => memo.update(`${axis}Vector`, (vect) => limitVectorMagnitude(vect + delta)),
+    ballProperties
+  )
+
+var applyGravity = ballProperties => ballProperties.update('yVector', yVect => yVect + 0.3)
+
+var applyCoordinateDeltas = ballProperties => ['x', 'y'].reduce(
+  (ballProps, axis) => ballProps.update(`${axis}Coord`, (coord) => coord + ballProps.get(`${axis}Vector`)),
+  ballProperties
+)
+
+var applyBounces = function(ballProperites) {
+  var hasReachedAreaBound = function(axis, ballProps) {
+    var coord = ballProps.get(`${axis}Coord`)
+    return coord <= 0 ? true : coord > areaBounds[axis].max
+  }
+
+  return ['x', 'y'].reduce(
+    (ballProps, axis) => ballProps.update(
+      `${axis}Vector`,
+        vect => hasReachedAreaBound(axis, ballProps) ? (vect * -0.9) : vect
+    ),
+    ballProperites
+  )
+}
+
 var coordinatesStream = Bacon.update(Immutable.Map({xVector: 0, yVector: 0, xCoord: 0, yCoord: 0}),
   [activeKeys.toEventStream()], function(ballProperties, activeKeys) {
-    var limitVectorMagnitude = vector => vector < 0 ? Math.max(vector, -5) : Math.min(vector, 5)
-    var vectorDeltasFromKeyboardAdded = activeKeys
-      .map(activeKey => keyCodeToAxisDelta[activeKey])
-      .filter(x => x != undefined)
-      .reduce(
-        (memo, {axis, delta}) => memo.update(`${axis}Vector`, (vect) => limitVectorMagnitude(vect + delta)),
-        ballProperties
-      )
-    var vectorDeltasApplied = vectorDeltasFromKeyboardAdded.update('yVector', yVect => yVect + 0.3)
-    var coordinateDeltasAdded = ['x', 'y'].reduce(
-      (ballProperties, axis) => ballProperties.update(`${axis}Coord`, (coord) => coord + ballProperties.get(`${axis}Vector`)),
-      vectorDeltasApplied
+    return [
+      applyKeyPresses(activeKeys),
+      applyGravity,
+      applyCoordinateDeltas,
+      applyBounces
+    ].reduce(
+      (ballProps, applyGameRule) => applyGameRule(ballProps),
+      ballProperties
     )
-    var hasReachedAreaBound = function(axis, ballProperties) {
-      var coord = ballProperties.get(`${axis}Coord`)
-      return coord <= 0 ? true : coord > areaBounds[axis].max
-    }
-
-    var bounchesApplied = ['x', 'y'].reduce(
-      (ballProperties, axis) => ballProperties.update(
-        `${axis}Vector`,
-        vect => hasReachedAreaBound(axis, ballProperties) ? (vect * -0.9) : vect
-      ),
-      coordinateDeltasAdded
-    )
-    return bounchesApplied
   }
 ).doAction(x => console.log(x.toJS()))
 
